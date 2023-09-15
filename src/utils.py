@@ -12,6 +12,83 @@ optuna.logging.set_verbosity(optuna.logging.WARNING)
 
 client = mlflow.tracking.MlflowClient()
 
+titles_map = {
+    'Mr' :         'Mr',
+    'Mme':         'Mrs',
+    'Ms':          'Mrs',
+    'Mrs' :        'Mrs',
+    'Master' :     'Master',
+    'Mlle':        'Miss',
+    'Miss' :       'Miss',
+    'Capt':        'Officer',
+    'Col':         'Officer',
+    'Major':       'Officer',
+    'Dr':          'Officer',
+    'Rev':         'Officer',
+    'Jonkheer':    'Royalty',
+    'Don':         'Royalty',
+    'Sir' :        'Royalty',
+    'Countess':    'Royalty',
+    'Dona':        'Royalty',
+    'Lady' :       'Royalty'
+}
+
+class DataPreprocessor():
+    def __init__(self, data) -> None:
+        self.col_index_set = False
+        self.data = data
+        
+        #in_features = ['Pclass', 'Sex', 'SibSp', 'Parch', 'Age', 'Embarked']
+        #out_features = ['Survived']
+        pass
+
+    def extract_title(self, names):
+        '''Extracts the title from the passenger names.'''
+
+        return names.str.extract(' ([A-Za-z]+)\.', expand=False).map(titles_map)
+
+    def preprocess_dataset(self, df, test=False):
+        self.in_features = ['Pclass', 'Sex', 'SibSp', 'Parch', 'Age', 'Embarked']
+        self.out_features = ['Survived']
+
+        #train_df['Title'] = train_df['Name'].map(lambda x: x.split(',')[1].split('.')[0])
+        
+        in_df = df.dropna(subset=["Embarked"])
+        if not test:
+            out_y = in_df[self.out_features]
+        in_df = in_df[self.in_features]
+        in_df.loc[in_df["Age"].isnull(), "Age"] = in_df["Age"].mean()
+        in_df['Male'] = in_df['Sex'].map(lambda x: True if x=="male" else False)
+        in_df['Title'] = self.extract_title(df['Name'])    
+
+        titles = set(titles_map.values())
+        for title in titles:
+            in_df['is_' + title] = in_df['Title'].map(lambda x: True if x==title else False)
+
+        for embarked in ['C', 'Q', 'S']:
+            in_df['Embarked_' + embarked] = in_df['Embarked'].map(lambda x: True if x==embarked else False)
+
+        in_df['FamilySize'] = in_df['SibSp'] + in_df['Parch']
+
+        in_df.drop(columns="Title", inplace=True)
+        in_df.drop(columns="Embarked", inplace=True)
+        in_df.drop(columns="Sex", inplace=True)
+        in_df.drop(columns="Parch", inplace=True)
+        in_df.drop(columns="SibSp", inplace=True)
+
+        if self.col_index_set:
+            in_df = in_df.reindex(columns = self.train_dumm_cols, fill_value = False)
+        else:
+            in_df = pd.get_dummies(in_df)
+            self.train_dumm_cols = in_df.columns
+            self.col_index_set = True
+
+        if test:
+            return in_df
+        
+        return in_df, out_y
+
+
 
 def preprocess_dataset(df, test=False):
     in_features = ['Pclass', 'Sex', 'SibSp', 'Parch']
