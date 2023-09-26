@@ -71,15 +71,6 @@ class DataPreprocessor():
         in_df.drop(columns="SibSp", inplace=True)
         in_df.drop(columns="Fare", inplace=True)
         in_df.drop(columns="Pclass", inplace=True)
-
-        """
-        if self.col_index_set:
-            in_df = in_df.reindex(columns = self.train_dumm_cols, fill_value = False)
-        else:
-            in_df = pd.get_dummies(in_df)
-            self.train_dumm_cols = in_df.columns
-            self.col_index_set = True
-        """
             
         if test:            
             return in_df
