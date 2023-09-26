@@ -1,5 +1,10 @@
 import sys
-sys.path.append("../src")
+from pathlib import Path
+src_path = Path(__file__).parent.parent / "src"
+print(src_path)
+src_path = src_path.absolute()
+print(src_path)
+sys.path.append(src_path)
 from utils import DataPreprocessor, kCrossVal
 from sklearn.ensemble import RandomForestClassifier
 from pandas import DataFrame

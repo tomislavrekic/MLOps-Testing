@@ -258,4 +258,3 @@ dependencies:
       - virtualenv==20.24.5
       - websocket-client==1.6.3
       - werkzeug==2.3.7
-prefix: /home/tomislav/mambaforge-pypy3/envs/titanic_env
