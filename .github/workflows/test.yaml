@@ -8,6 +8,7 @@ on:
     branches:
       - 'master'
   schedule:
+    # Everyday at 1:32 UTC
     - cron: '32 1 * * *'
 
 jobs:
