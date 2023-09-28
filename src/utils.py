@@ -1,7 +1,6 @@
-import pandas as pd
-import os
+"""Helper functions for RF on titanic dataset"""
 import numpy as np
-
+from pandas import DataFrame
 from sklearn.metrics import accuracy_score
 
 
@@ -27,6 +26,8 @@ titles_map = {
 }
 
 class DataPreprocessor():
+    """Data preprocessing for titanic dataset
+    """
     def __init__(self) -> None:
         #self.col_index_set = False
         pass
@@ -34,32 +35,46 @@ class DataPreprocessor():
     def extract_title(self, names):
         '''Extracts the title from the passenger names.'''
 
-        return names.str.extract(' ([A-Za-z]+)\.', expand=False).map(titles_map)
+        return names.str.extract(' ([A-Za-z]+)\\.', expand=False).map(titles_map)
 
-    def preprocess_dataset(self, df, test=False):
+    def preprocess_dataset(self, data : DataFrame, test=False):
+        """Data preprocessing for titanic dataset
+
+        Args:
+            data (DataFrame): Unprocessed dataset
+            test (bool, optional): Is dataset a test dataset. Defaults to False.
+
+        Returns:
+            DataFrame, DataFrame: X and Y split, if test=False
+            DataFrame: X , if test=True
+        """
+
         in_features = ['Pclass', 'Sex', 'SibSp', 'Parch', 'Age', 'Embarked', 'Fare']
         out_features = ['Survived']
 
         #train_df['Title'] = train_df['Name'].map(lambda x: x.split(',')[1].split('.')[0])
-        
-        in_df = df.dropna(subset=["Embarked"])
+
+        in_df = data.dropna(subset=["Embarked"])
         if not test:
             out_y = in_df[out_features]
         in_df = in_df[in_features]
         in_df.loc[in_df["Age"].isnull(), "Age"] = in_df["Age"].mean()
         in_df.loc[in_df["Fare"].isnull(), "Fare"] = in_df["Fare"].mean()
-        in_df['Male'] = in_df['Sex'].map(lambda x: True if x=="male" else False)
-        in_df['Title'] = self.extract_title(df['Name'])    
+        in_df['Male'] = in_df['Sex'].map(lambda x: x=="male")
+        in_df['Title'] = self.extract_title(data['Name'])
 
         titles = set(titles_map.values())
+        in_df = in_df.head(5)
         for title in titles:
-            in_df['is_' + title] = in_df['Title'].map(lambda x: True if x==title else False)
+            in_df['is_' + title] = in_df['Title'].map(lambda x: x==title)
 
         for embarked in ['C', 'Q', 'S']:
-            in_df['Embarked_' + embarked] = in_df['Embarked'].map(lambda x: True if x==embarked else False)
+            in_df['Embarked_' + embarked] = in_df['Embarked'].map(
+                lambda x: x==embarked)
 
-        for Pclass in [1, 2, 3]:
-            in_df['Pclass_' + str(Pclass)] = in_df['Pclass'].map(lambda x: True if x==Pclass else False)
+        for p_class in [1, 2, 3]:
+            in_df['Pclass_' + str(p_class)] = in_df['Pclass'].map(
+                lambda x: x==p_class)
 
         in_df['FamilySize'] = in_df['SibSp'] + in_df['Parch']
         in_df['FarePerPerson'] = in_df['Fare'] / (1 + in_df['FamilySize'])
@@ -71,14 +86,25 @@ class DataPreprocessor():
         in_df.drop(columns="SibSp", inplace=True)
         in_df.drop(columns="Fare", inplace=True)
         in_df.drop(columns="Pclass", inplace=True)
-            
-        if test:            
+
+        if test:
             return in_df
-        
+
         return in_df, out_y
 
 
-def kDataSplit(k, i, data):
+def k_data_split(k : int, i : int, data : DataFrame):
+    """Split the data in k equal parts, i-part will be returned as validation data,
+      the rest will be returned as train data
+
+    Args:
+        k (int): number of splits
+        i (int): which split will be used for validation
+        data (DataFrame): dataset to split
+
+    Returns:
+        DataFrame, DataFrame: Train and Validation data
+    """
     val_ratio = 1.0 / k
     interval = len(data) * val_ratio
     interval = np.floor(interval).astype(np.int16)
@@ -93,7 +119,7 @@ def kDataSplit(k, i, data):
     #for j in range(len(splits)):
     #    print(len(splits[j]))
 
-    #K-fold Cross-Validation    
+    #K-fold Cross-Validation
     val_pool = splits[i]
     train_pool = []
     for j in range(len(splits)):
@@ -106,20 +132,35 @@ def kDataSplit(k, i, data):
     val_data = data.iloc(axis=0)[val_pool]
     return train_data, val_data
 
-def kCrossVal(k, model_class, model_params, data, preprocessor):
+def k_cross_val(k : int,
+                model_class,
+                model_params : dict[str, any],
+                data : DataFrame,
+                preprocessor : DataPreprocessor) -> float:
+    """_summary_
+
+    Args:
+        k (int): Number of splits
+        model_class (_type_): Model class to use
+        model_params (dict[str, any]): Model params to use
+        data (DataFrame): Dataset to train on
+        preprocessor (DataPreprocessor): Preprocessing to do on the dataset
+
+    Returns:
+        float: Average accuracy
+    """
     model = model_class(**model_params)
 
     sum_score = 0.0
 
     for i in range(k):
-        train_data, val_data = kDataSplit(k, i, data)
-        
-        X_train, y_train = preprocessor.preprocess_dataset(train_data)
-        X_val, y_val = preprocessor.preprocess_dataset(val_data)
+        train_data, val_data = k_data_split(k, i, data)
 
-        model.fit(X_train, np.ravel(y_train))
-        val_pred = model.predict(X_val)
+        x_train, y_train = preprocessor.preprocess_dataset(train_data)
+        x_val, y_val = preprocessor.preprocess_dataset(val_data)
+
+        model.fit(x_train, np.ravel(y_train))
+        val_pred = model.predict(x_val)
         acc = accuracy_score(y_true=y_val, y_pred=val_pred)
         sum_score += acc
     return sum_score / k
-
