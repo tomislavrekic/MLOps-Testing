@@ -35,7 +35,7 @@ class DataPreprocessor():
     def extract_title(self, names):
         '''Extracts the title from the passenger names.'''
 
-        return names.str.extract(' ([A-Za-z]+)\.', expand=False).map(titles_map)
+        return names.str.extract(' ([A-Za-z]+)\\.', expand=False).map(titles_map)
 
     def preprocess_dataset(self, data : DataFrame, test=False):
         """Data preprocessing for titanic dataset
@@ -94,6 +94,17 @@ class DataPreprocessor():
 
 
 def k_data_split(k : int, i : int, data : DataFrame):
+    """Split the data in k equal parts, i-part will be returned as validation data,
+      the rest will be returned as train data
+
+    Args:
+        k (int): number of splits
+        i (int): which split will be used for validation
+        data (DataFrame): dataset to split
+
+    Returns:
+        DataFrame, DataFrame: Train and Validation data
+    """
     val_ratio = 1.0 / k
     interval = len(data) * val_ratio
     interval = np.floor(interval).astype(np.int16)
@@ -123,7 +134,21 @@ def k_data_split(k : int, i : int, data : DataFrame):
 
 def k_cross_val(k : int,
                 model_class,
-                model_params, data, preprocessor):
+                model_params : dict[str, any],
+                data : DataFrame,
+                preprocessor : DataPreprocessor) -> float:
+    """_summary_
+
+    Args:
+        k (int): Number of splits
+        model_class (_type_): Model class to use
+        model_params (dict[str, any]): Model params to use
+        data (DataFrame): Dataset to train on
+        preprocessor (DataPreprocessor): Preprocessing to do on the dataset
+
+    Returns:
+        float: Average accuracy
+    """
     model = model_class(**model_params)
 
     sum_score = 0.0
