@@ -1,39 +1,36 @@
-import sys
-from pathlib import Path
-src_path = Path(__file__).parent.parent / "src"
-print(src_path)
-src_path = src_path.absolute()
-print(src_path)
-sys.path.append(src_path)
-from utils import DataPreprocessor, kCrossVal
-from sklearn.ensemble import RandomForestClassifier
-from pandas import DataFrame
+"""Test file for utils.py"""
 import pytest
+from pandas import DataFrame
 
-@pytest.fixture()
-def dp():
+from utils import DataPreprocessor
+
+@pytest.fixture(name="data_preprocessor")
+def data_pp():
+    """
+    Returns:
+        DataPreprocessor: instance of class
+    """
     return DataPreprocessor()
 
 
-def test_dp_init(dp):
-    assert isinstance(dp, DataPreprocessor)
+def test_dp_init(data_preprocessor):
+    """Test DataPreprocessor constructor"""
+    assert isinstance(data_preprocessor, DataPreprocessor)
 
 def test_df(pd_df):
-    assert (pd_df.shape == (891, 12))
+    """Check against expected train dataset shape"""
+    assert pd_df.shape == (891, 12)
 
+def test_dp_na(pd_df: DataFrame, data_preprocessor):
+    """Test: there shouldn't be NAN values"""
+    x_data, y_data = data_preprocessor.preprocess_dataset(pd_df)
+    assert not x_data.isna().values.any()
+    assert not y_data.isna().values.any()
 
-def test_fixture(input_true):
-    assert input_true
+    x_data = data_preprocessor.preprocess_dataset(pd_df, test=True)
+    assert not x_data.isna().values.any()
 
-def test_dp_na(pd_df: DataFrame, dp):
-    X, Y = dp.preprocess_dataset(pd_df)
-    assert not X.isna().values.any()
-    assert not Y.isna().values.any()
-
-    X = dp.preprocess_dataset(pd_df, test=True)
-    assert not X.isna().values.any()
-
-def test_dp_target(pd_df: DataFrame, dp):
-    X = dp.preprocess_dataset(pd_df, test=True)
-    assert 'Survived' not in X.columns
-
+def test_dp_target(pd_df: DataFrame, data_preprocessor):
+    """Test: dataset target 'Survived' should be in X part of data"""
+    x_data = data_preprocessor.preprocess_dataset(pd_df, test=True)
+    assert 'Survived' not in x_data.columns
