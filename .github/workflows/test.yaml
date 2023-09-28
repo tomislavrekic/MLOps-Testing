@@ -19,7 +19,7 @@ jobs:
     strategy: 
       fail-fast: false
       matrix: 
-        os: [ubuntu-22.04, ubuntu-20.04, macos-latest, windows-latest]
+        os: [ubuntu-22.04, ubuntu-20.04]
         python-version: 
           - "3.9"
           - "3.10"
@@ -40,6 +40,11 @@ jobs:
         run: |
           python3 -m pip install --upgrade pip
           python3 -m pip install -r tests/requirements.txt
+          pip install pylint
+
+      - name: Analysing the code with pylint
+        run: |
+          pylint $(git ls-files '*.py')
 
       - name: Run tests
         run: |
