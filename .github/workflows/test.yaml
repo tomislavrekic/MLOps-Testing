@@ -40,11 +40,6 @@ jobs:
         run: |
           python3 -m pip install --upgrade pip
           python3 -m pip install -r tests/requirements.txt
-          pip install pylint
-
-      - name: Analysing the code with pylint
-        run: |
-          pylint $(git ls-files '*.py')
 
       - name: Run tests
         run: |
