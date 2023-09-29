@@ -1,0 +1,45 @@
+name: Nightly
+
+on:
+  schedule:
+    # Everyday at 1:32 UTC
+    - cron: '32 1 * * *'
+
+jobs:
+  run-tests:
+    defaults:
+      run:
+        shell: bash -l {0}
+    strategy: 
+      fail-fast: false
+      matrix: 
+        os: [ubuntu-22.04, ubuntu-20.04]
+        python-version: 
+          - "3.9"
+          - "3.10"
+          - "3.11"
+    name: Test
+    runs-on: ${{matrix.os}}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{matrix.python-version}}
+                
+      - name: Install requirements
+        run: |
+          python3 -m pip install --upgrade pip
+          python3 -m pip install -r tests/requirements.txt
+
+      - name: Run tests
+        run: |
+          uname -a
+          which python3
+          
+          pytest
+
+          
